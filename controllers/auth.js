@@ -34,6 +34,7 @@ exports.postLogin = (req, res, next) => {
       req.flash("errors", info);
       return res.redirect("/login");
     }
+    // req.user = user  //adds user to req request 
     req.logIn(user, (err) => {
       if (err) {
         return next(err);
