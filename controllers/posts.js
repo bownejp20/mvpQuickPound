@@ -1,6 +1,7 @@
 const cloudinary = require("../middleware/cloudinary");
 const Post = require("../models/Post");
 const Comment = require("../models/Comment");
+const {Types} = require("mongoose");
 
 module.exports = {
   getProfile: async (req, res) => {
@@ -21,9 +22,41 @@ module.exports = {
   },
   getPost: async (req, res) => {
     try {
-      const post = await Post.findById(req.params.id);
-      const comments = await Comment.find({post:req.params.id});
-      res.render("post.ejs", { post: post, user: req.user, comments: comments });// comes from the post.ejs line 36 
+      console.log(req.params.id)
+      const post = await Post.aggregate( [
+        { $match : { _id : Types.ObjectId(req.params.id) } },
+        {
+          $lookup:
+              {
+                from: "users",
+                localField: "user",
+                foreignField: "_id",
+                as: "user"
+              }
+        },
+        {
+          $unwind: "$user",
+        },
+      ] )
+      console.log(post, "post")
+      const comments = await Comment.aggregate( [
+        { $match : { post : req.params.id } },
+        {
+          $lookup:
+              {
+                from: "users",
+                localField: "user",
+                foreignField: "_id",
+                as: "user"
+              }
+        },
+        {
+          $unwind: "$user",
+        },
+      ] )
+
+      console.log(req.user, "user")
+      res.render("post.ejs", { post: post[0], user: req.user, comments: comments });// comes from the post.ejs line 36
     } catch (err) {
       console.log(err);
     }
